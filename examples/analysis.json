@@ -1,0 +1,11 @@
+{
+  "classes": ["car", "motorcycle", "bus", "truck"],
+  "confidence": 0.25,
+  "image_size": 640,
+  "device": "cpu",
+  "roi": [],
+  "lines": [{"id": "main", "start": {"x": 0.1, "y": 0.55}, "end": {"x": 0.9, "y": 0.55}}],
+  "hysteresis": 0.008,
+  "min_track_age": 3,
+  "max_track_gap": 30
+}

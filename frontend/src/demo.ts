@@ -1,0 +1,81 @@
+import type { Job, Summary, VideoInfo } from './types';
+export const demoVideo: VideoInfo = {
+  width: 1920,
+  height: 1080,
+  duration_seconds: 60,
+  fps: 30,
+  frame_count: 1800,
+  codec: 'h264',
+  size_bytes: 15400000,
+  timing: 'source_pts',
+};
+export const demoSummary: Summary = {
+  crossing_total: 48,
+  processing_seconds: 100,
+  throughput_fps: 18,
+  processed_frames: 1800,
+  video: demoVideo,
+  configuration: {
+    classes: ['car', 'motorcycle', 'bus', 'truck'],
+    confidence: 0.25,
+    image_size: 640,
+    device: 'cpu',
+    roi: [],
+    lines: [
+      { id: 'line_1', start: { x: 0.1, y: 0.5 }, end: { x: 0.9, y: 0.5 } },
+    ],
+  },
+  model: { checkpoint: 'Illustrative model' },
+  interval_seconds: 10,
+  notes: ['Demo values are illustrative, not benchmark results.'],
+  counts: [
+    { class_name: 'car', line_id: 'line_1', direction: 'A_to_B', count: 18 },
+    { class_name: 'car', line_id: 'line_1', direction: 'B_to_A', count: 12 },
+    {
+      class_name: 'motorcycle',
+      line_id: 'line_1',
+      direction: 'A_to_B',
+      count: 5,
+    },
+    {
+      class_name: 'motorcycle',
+      line_id: 'line_1',
+      direction: 'B_to_A',
+      count: 7,
+    },
+    { class_name: 'bus', line_id: 'line_1', direction: 'A_to_B', count: 2 },
+    { class_name: 'truck', line_id: 'line_1', direction: 'B_to_A', count: 4 },
+  ],
+  intervals: [3, 4, 5, 6, 4, 3].flatMap((count, index) => [
+    {
+      start_seconds: index * 10,
+      class_name: 'car' as const,
+      direction: 'A_to_B' as const,
+      count,
+    },
+    {
+      start_seconds: index * 10,
+      class_name: 'car' as const,
+      direction: 'B_to_A' as const,
+      count: [2, 5, 3, 4, 5, 4][index],
+    },
+  ]),
+};
+export const demoJob: Job = {
+  id: 'demo',
+  video_id: 'demo',
+  filename: 'City intersection · illustrative sample',
+  status: 'succeeded',
+  configuration: demoSummary.configuration,
+  video: demoVideo,
+  progress: 1,
+  processing_seconds: 100,
+  throughput_fps: 18,
+  created_at: '2026-01-15T09:00:00Z',
+  started_at: null,
+  finished_at: null,
+  error: null,
+  attempt: 1,
+  summary: demoSummary,
+  cancel_requested: false,
+};

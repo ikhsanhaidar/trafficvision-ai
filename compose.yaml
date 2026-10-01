@@ -1,0 +1,105 @@
+name: trafficvision-ai
+
+x-backend: &backend
+  build:
+    context: .
+    target: cpu
+  image: trafficvision-ai-backend:cpu
+  env_file: .env
+  environment:
+    TV_DATABASE_URL: postgresql+psycopg://trafficvision:${POSTGRES_PASSWORD:?Run scripts/configure.py first}@db:5432/trafficvision
+    TV_REDIS_URL: redis://redis:6379/0
+    TV_STORAGE_ROOT: /data
+    MODEL_CHECKPOINT: /models/yolo11n.pt
+  volumes:
+    - videos:/data
+    - models:/models
+  restart: unless-stopped
+  init: true
+
+services:
+  db:
+    image: postgres:16.10-alpine
+    environment:
+      POSTGRES_DB: trafficvision
+      POSTGRES_USER: trafficvision
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run scripts/configure.py first}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U trafficvision -d trafficvision"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  redis:
+    image: redis:7.2.11-alpine
+    command: [redis-server, --appendonly, "yes", --maxmemory, 256mb, --maxmemory-policy, noeviction]
+    volumes:
+      - redis:/data
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  migrate:
+    <<: *backend
+    command: [alembic, upgrade, head]
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+  api:
+    <<: *backend
+    command: [uvicorn, "trafficvision.api:app", --host, "0.0.0.0", --port, "8000"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health/ready', timeout=4)"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+  worker:
+    <<: *backend
+    command: [celery, -A, trafficvision.celery_app:celery_app, worker, -Q, analysis, --loglevel=INFO, --concurrency=1, --prefetch-multiplier=1]
+    stop_grace_period: 30s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+  scheduler:
+    <<: *backend
+    command: [celery, -A, trafficvision.celery_app:celery_app, beat, --loglevel=INFO, --schedule=/tmp/celerybeat-schedule]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+  recovery:
+    <<: *backend
+    command: [celery, -A, trafficvision.celery_app:celery_app, worker, -Q, maintenance, --loglevel=INFO, --concurrency=1, --prefetch-multiplier=1]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+  frontend:
+    build: ./frontend
+    ports:
+      - "127.0.0.1:${APP_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres:
+  redis:
+  videos:
+  models:

@@ -1,0 +1,63 @@
+name: Verify
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      real_video:
+        description: Download licensed footage and run the real model smoke test
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.22"
+          enable-cache: true
+      - run: uv python install 3.12
+      - run: uv sync --frozen
+      - run: uv run ruff check backend tests scripts
+      - run: uv run ruff format --check backend tests scripts
+      - run: uv run pytest -m "not real_video"
+      - if: github.event_name == 'workflow_dispatch' && inputs.real_video
+        run: |
+          uv run python scripts/fetch_smoke_video.py
+          uv run python scripts/smoke_real_video.py --output artifacts/ci-real-video
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-diagnostics
+          path: artifacts/
+          if-no-files-found: ignore
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-diagnostics
+          path: frontend/test-results/

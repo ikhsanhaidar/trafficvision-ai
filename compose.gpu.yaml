@@ -1,0 +1,12 @@
+# Optional override: docker compose -f compose.yaml -f compose.gpu.yaml up --build -d
+# Requires NVIDIA Container Toolkit and a CUDA 12.8-compatible host driver.
+services:
+  api:
+    environment:
+      TV_GPU_ENABLED: "true"
+  worker:
+    build:
+      context: .
+      target: gpu
+    image: trafficvision-ai-backend:gpu
+    gpus: all
