@@ -53,6 +53,12 @@ CPU Compose services and backend/frontend images built successfully, including t
 
 A user uploaded a 12.1-second, 3840×2160 MP4 but could not select **Start analysis**. The live API logged successful upload (`201`) and preview (`200`), with no job creation request. The button correctly required a completed counting line; its instructions were below the large preview and easy to miss. New Analysis now displays the two-click instruction immediately above the preview, reports the first-point and completed-line states, and explains the disabled button. The browser workflow test verifies disabled → first point → enabled after second point. All 9 Playwright tests, frontend lint/format checks and production build passed. The updated frontend was deployed to the user's running localhost:8080 stack without recreating backend or database; proxied readiness returned 200.
 
+## GitHub publication (2026-10-01)
+
+Published the public repository [ikhsanhaidar/trafficvision-ai](https://github.com/ikhsanhaidar/trafficvision-ai) with `main` as the default branch. Initial commit `7b6b6d4` contains 82 source, configuration, test and documentation files (about 1.1 MB). Git ignore rules exclude local credentials, uploads, model weights, generated results, dependency environments and build output. An index scan found no local credential values or recognizable token/private-key patterns. README includes clone/setup instructions and a CI badge; CI runs frontend lint and formatting in addition to build/browser tests.
+
+Pre-push checks passed: 93 Python tests, Ruff lint/format, TypeScript, Prettier and all 9 Playwright tests. The first [GitHub Actions run](https://github.com/ikhsanhaidar/trafficvision-ai/actions/runs/36870088651) passed both backend and frontend jobs on fresh hosted Linux runners. Local and remote initial commit hashes matched. The optional real-video workflow remained opt-in; its separate local functional results are recorded above.
+
 ### Resume notes
 
 Long-running processes and partial agent changes may survive usage interruptions. Preserve existing files; inspect before resuming. Do not confuse implementation, synthetic verification, real-video functional smoke and model accuracy measurements. Verification-only secrets stay in ignored `artifacts/stack`, never in committed examples or output logs.
